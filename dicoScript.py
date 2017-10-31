@@ -39,31 +39,34 @@ def get_shadows(args):
 				shadows[data[0]] = [elem for elem in hashed if elem != ""]
 	return (shadows)
 
-def decrypt_shadows(args, shadows):
+def generate_password(args):
 	with open(args.dico, "r") as dicoFile:
-		timeBeg = time.time()
 		for password in dicoFile:
-			password = password.replace('\n', '')
+			password = password.replace('\n', '') #strip()
 			if password != "":
-				compare_hashed_password(args, shadows, password, timeBeg)
+				yield password
 
-def compare_hashed_password(args, shadows, password, timeBeg):
-	found = []
-	for name, shadow in shadows.items():
-		passwordHashed = hashMethod[shadow[0]](password.encode("utf-8")).hexdigest()
-		if (passwordHashed == shadow[1]):
-			timeEnd = time.time()
-			write_to_output(args, name, password, timeEnd - timeBeg)
-			found.append(name)
-	for name in found:
-		del shadows[name]
+
+def decrypt_shadows(args, shadows):
+	timeBeg = time.time()
+	for password in generate_password(args):
+		if (len(shadows) == 0):
+			return
+		found = []
+		for name, shadow in shadows.items():
+			passwordHashed = hashMethod[shadow[0]](password.encode("utf-8")).hexdigest()
+			if (passwordHashed == shadow[-1]):
+				timeEnd = time.time()
+				write_to_output(args, name, password, timeEnd - timeBeg)
+				found.append(name)
+		for name in found:
+			del shadows[name]
 
 def write_to_output(args, shadowName, passwordFound, timeDecrypt):
 	out = "Nom:{}, Mot de passe:{}, temps de déchiffrage:{}".format(shadowName, passwordFound, round(timeDecrypt, 4))
 	if (args.v == True):
 		print(out)
 	outputFile.write(out + '\n')
-
 
 def main():
 	args = parse_arg()
